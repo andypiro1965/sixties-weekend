@@ -523,11 +523,43 @@ function buildNameGrid() {
   });
 }
 
-function selectName(name, btn) {
+async function selectName(name, btn) {
   document.querySelectorAll('.name-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedName = name;
-  document.getElementById('btnToStep2').disabled = false;
+
+  // Prova a caricare le scelte precedenti dal foglio Google
+  const prevBtn = document.getElementById('btnToStep2');
+  prevBtn.disabled = true;
+  prevBtn.textContent = '⏳ Caricamento…';
+
+  selectedWeekends.clear();
+
+  if (SCRIPT_URL !== "YOUR_GOOGLE_SCRIPT_URL_HERE") {
+    try {
+      const resp = await fetch(SCRIPT_URL + '?action=read', { mode: 'cors' });
+      const data = await resp.json();
+      if (data[name] && Array.isArray(data[name])) {
+        data[name].forEach(id => selectedWeekends.add(id));
+      }
+    } catch(e) {
+      // Nessun dato precedente o errore rete — si riparte da zero
+    }
+  }
+
+  // Aggiorna visivamente i pulsanti weekend con le scelte precedenti
+  document.querySelectorAll('.we-btn').forEach(b => b.classList.remove('checked'));
+  selectedWeekends.forEach(id => {
+    const el = document.getElementById('we_' + id);
+    if (el) el.classList.add('checked');
+  });
+  updateSelSummary();
+
+  prevBtn.disabled = false;
+  const n = selectedWeekends.size;
+  prevBtn.textContent = n > 0
+    ? `Modifica scelte (${n} già selezionati) →`
+    : 'Continua →';
 }
 
 function buildWeekendPicker() {
